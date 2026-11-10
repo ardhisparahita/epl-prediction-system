@@ -1,0 +1,54 @@
+{
+  "model_version": "epl-result-live-2026-2027-v1",
+  "target_classes": [
+    "H",
+    "D",
+    "A"
+  ],
+  "feature_columns": [
+    "H_gf_5",
+    "H_ga_5",
+    "H_pts_5",
+    "H_sot_5",
+    "A_gf_5",
+    "A_ga_5",
+    "A_pts_5",
+    "A_sot_5",
+    "diff_gf_5",
+    "diff_ga_5",
+    "diff_pts_5",
+    "diff_sot_5"
+  ],
+  "feature_count": 12,
+  "history_window_matches": 5,
+  "minimum_history_matches": 3,
+  "history_venue_policy": "all_home_and_away_matches",
+  "same_calendar_date_policy": "exclude_same_date_matches_from_prior_history",
+  "sot_missing_policy": "mean_of_valid_sot_in_last_five; median_imputation_fitted_inside_training_pipeline",
+  "training_seasons": [
+    "1819",
+    "1920",
+    "2021",
+    "2122",
+    "2223",
+    "2324",
+    "2425",
+    "2526"
+  ],
+  "training_through_season": "2025/2026",
+  "live_season": "2026/2027",
+  "model_is_frozen_for_live_season": true,
+  "random_state": 42,
+  "selected_parameters": {
+    "logistic_regression": {
+      "C": 0.01,
+      "class_weight": "balanced"
+    },
+    "random_forest": {
+      "class_weight": "balanced",
+      "max_depth": 6,
+      "min_samples_leaf": 10,
+      "n_estimators": 200
+    }
+  }
+}
