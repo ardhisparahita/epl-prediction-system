@@ -1,0 +1,11 @@
+
+# Include production dependencies
+-r requirements.txt
+
+# Automated Testing
+pytest==9.2.0
+httpx2>=2.0.0,<3.0.0
+
+# Machine Learning Experiments and Notebooks
+matplotlib==3.11.2
+ipykernel==6.31.0
