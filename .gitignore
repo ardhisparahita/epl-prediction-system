@@ -40,6 +40,10 @@ data/raw/*.csv
 *.joblib
 *.pkl
 
+# Keep production model artifacts
+!ml-service/artifacts/
+!ml-service/artifacts/*.joblib
+
 # Logs
 *.log
 logs/
@@ -51,3 +55,6 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local API test payload
+/ml-service/tests/request_arsenal_chelsea.json
