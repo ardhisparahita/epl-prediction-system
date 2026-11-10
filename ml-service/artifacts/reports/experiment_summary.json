@@ -1,0 +1,58 @@
+{
+  "feature_count": 12,
+  "feature_columns": [
+    "H_gf_5",
+    "H_ga_5",
+    "H_pts_5",
+    "H_sot_5",
+    "A_gf_5",
+    "A_ga_5",
+    "A_pts_5",
+    "A_sot_5",
+    "diff_gf_5",
+    "diff_ga_5",
+    "diff_pts_5",
+    "diff_sot_5"
+  ],
+  "train_rows": 2226,
+  "validation_rows": 377,
+  "test_rows": 377,
+  "live_completed_rows_not_used_as_retrospective_live_evaluation": 55,
+  "best_lr_params": {
+    "C": 0.01,
+    "class_weight": "balanced"
+  },
+  "best_rf_params": {
+    "class_weight": "balanced",
+    "max_depth": 6,
+    "min_samples_leaf": 10,
+    "n_estimators": 200
+  },
+  "test_metrics": [
+    {
+      "model": "Majority baseline",
+      "accuracy": 0.4217506631299735,
+      "macro_precision": 0.14058355437665784,
+      "macro_recall": 0.3333333333333333,
+      "macro_f1": 0.19776119402985073,
+      "log_loss": 1.1211116665809144
+    },
+    {
+      "model": "Logistic Regression",
+      "accuracy": 0.40848806366047746,
+      "macro_precision": 0.3852274375530189,
+      "macro_recall": 0.39384988838812074,
+      "macro_f1": 0.3858655789668803,
+      "log_loss": 1.2086178146545254
+    },
+    {
+      "model": "Random Forest",
+      "accuracy": 0.4005305039787798,
+      "macro_precision": 0.3895089084304611,
+      "macro_recall": 0.39227650039467327,
+      "macro_f1": 0.38770064259548614,
+      "log_loss": 1.2078292532682586
+    }
+  ],
+  "production_model_version": "epl-result-live-2026-2027-v1"
+}
