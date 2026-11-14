@@ -1,5 +1,12 @@
 package dto
 
+// PredictionInput represents the prediction request from API users.
+type PredictionInput struct {
+	HomeTeam    string `json:"home_team"`
+	AwayTeam    string `json:"away_team"`
+	KickoffDate string `json:"kickoff_date"`
+}
+
 // HistoricalMatch represents one completed historical match.
 type HistoricalMatch struct {
 	Date              string   `json:"date"`

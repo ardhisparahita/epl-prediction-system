@@ -11,22 +11,25 @@ import (
 
 	"github.com/ardhisparahita/epl-prediction-system/backend/internal/client"
 	"github.com/ardhisparahita/epl-prediction-system/backend/internal/dto"
+	"github.com/ardhisparahita/epl-prediction-system/backend/internal/service"
 	"github.com/gofiber/fiber/v3"
 )
 
 type mockPredictionService struct {
+	request  dto.PredictionInput
 	response dto.PredictionResponse
 	err      error
+	calls    int
 	called   bool
-	request  dto.PredictionRequest
 }
 
 func (m *mockPredictionService) Predict(
 	ctx context.Context,
-	payload dto.PredictionRequest,
+	input dto.PredictionInput,
 ) (dto.PredictionResponse, error) {
+	m.calls++
 	m.called = true
-	m.request = payload
+	m.request = input
 
 	return m.response, m.err
 }
@@ -73,8 +76,7 @@ func TestPredictionHandlerSuccess(t *testing.T) {
 	body := `{
 		"home_team": "Arsenal",
 		"away_team": "Chelsea",
-		"kickoff_date": "2026-11-15",
-		"historical_matches": []
+		"kickoff_date": "2026-11-15"
 	}`
 
 	req := httptest.NewRequest(
@@ -262,5 +264,111 @@ func TestPredictionHandlerServiceNotInitialized(t *testing.T) {
 
 	if resp.StatusCode != http.StatusServiceUnavailable {
 		t.Fatalf("expected HTTP 503, got %d", resp.StatusCode)
+	}
+}
+
+func TestPredictionHandlerValidationError(t *testing.T) {
+	mockService := &mockPredictionService{
+		err: &service.ValidationError{
+			Message: "insufficient match history for home team Arsenal",
+		},
+	}
+
+	app := newPredictionTestApp(mockService)
+
+	body := `{
+		"home_team": "Arsenal",
+		"away_team": "Chelsea",
+		"kickoff_date": "2026-11-15"
+	}`
+
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/api/v1/predictions",
+		strings.NewReader(body),
+	)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusUnprocessableEntity {
+		t.Fatalf("expected HTTP 422, got %d", resp.StatusCode)
+	}
+
+	var result map[string]string
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	expectedMessage := "insufficient match history for home team Arsenal"
+
+	if result["message"] != expectedMessage {
+		t.Errorf(
+			"expected message %q, got %q",
+			expectedMessage,
+			result["message"],
+		)
+	}
+
+	if !mockService.called {
+		t.Error("prediction service was not called")
+	}
+}
+
+func TestPredictionHandlerRepositoryError(t *testing.T) {
+	mockService := &mockPredictionService{
+		err: &service.RepositoryError{
+			Err: errors.New("database connection failed"),
+		},
+	}
+
+	app := newPredictionTestApp(mockService)
+
+	body := `{
+		"home_team": "Arsenal",
+		"away_team": "Chelsea",
+		"kickoff_date": "2026-11-15"
+	}`
+
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/api/v1/predictions",
+		strings.NewReader(body),
+	)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Fatalf("expected HTTP 500, got %d", resp.StatusCode)
+	}
+
+	var result map[string]string
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	expectedMessage := "Failed to retrieve match history"
+
+	if result["message"] != expectedMessage {
+		t.Errorf(
+			"expected message %q, got %q",
+			expectedMessage,
+			result["message"],
+		)
+	}
+
+	if !mockService.called {
+		t.Error("prediction service was not called")
 	}
 }

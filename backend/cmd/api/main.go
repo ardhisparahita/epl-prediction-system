@@ -8,6 +8,7 @@ import (
 	"github.com/ardhisparahita/epl-prediction-system/backend/config"
 	"github.com/ardhisparahita/epl-prediction-system/backend/database"
 	"github.com/ardhisparahita/epl-prediction-system/backend/internal/client"
+	"github.com/ardhisparahita/epl-prediction-system/backend/internal/repository"
 	"github.com/ardhisparahita/epl-prediction-system/backend/internal/routes"
 	"github.com/ardhisparahita/epl-prediction-system/backend/internal/service"
 
@@ -41,6 +42,15 @@ func run() error {
 	}
 	defer sqlDB.Close()
 
+	// Initialize match history repository.
+	matchRepository, err := repository.NewMatchRepository(db)
+	if err != nil {
+		return fmt.Errorf(
+			"initialize match repository: %w",
+			err,
+		)
+	}
+
 	// Initialize Python ML Service client.
 	mlClient, err := client.NewMLClient(
 		cfg.MLServiceURL,
@@ -53,6 +63,7 @@ func run() error {
 	// Initialize prediction service.
 	predictionService, err := service.NewPredictionService(
 		mlClient,
+		matchRepository,
 	)
 	if err != nil {
 		return fmt.Errorf("initialize prediction service: %w", err)

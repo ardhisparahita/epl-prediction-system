@@ -7,6 +7,7 @@ import (
 
 	"github.com/ardhisparahita/epl-prediction-system/backend/internal/client"
 	"github.com/ardhisparahita/epl-prediction-system/backend/internal/dto"
+	"github.com/ardhisparahita/epl-prediction-system/backend/internal/service"
 	"github.com/gofiber/fiber/v3"
 )
 
@@ -14,7 +15,7 @@ import (
 type PredictionService interface {
 	Predict(
 		ctx context.Context,
-		payload dto.PredictionRequest,
+		input dto.PredictionInput,
 	) (dto.PredictionResponse, error)
 }
 
@@ -43,7 +44,7 @@ func (h *PredictionHandler) Predict(c fiber.Ctx) error {
 		)
 	}
 
-	var payload dto.PredictionRequest
+	var payload dto.PredictionInput
 
 	if err := json.Unmarshal(c.Body(), &payload); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(
@@ -58,6 +59,28 @@ func (h *PredictionHandler) Predict(c fiber.Ctx) error {
 	result, err := h.predictionService.Predict(c, payload)
 
 	if err != nil {
+		var validationErr *service.ValidationError
+
+		if errors.As(err, &validationErr) {
+			return c.Status(fiber.StatusUnprocessableEntity).JSON(
+				fiber.Map{
+					"status":  "error",
+					"message": validationErr.Error(),
+				},
+			)
+		}
+
+		var repositoryErr *service.RepositoryError
+
+		if errors.As(err, &repositoryErr) {
+			return c.Status(fiber.StatusInternalServerError).JSON(
+				fiber.Map{
+					"status":  "error",
+					"message": "Failed to retrieve match history",
+				},
+			)
+		}
+
 		var upstreamErr *client.HTTPError
 
 		if errors.As(err, &upstreamErr) {
