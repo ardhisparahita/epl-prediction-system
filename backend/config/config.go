@@ -20,6 +20,8 @@ type Config struct {
 	DBName     string
 	DBSSLMode  string
 	DBTimezone string
+
+	MLServiceURL string
 }
 
 func Load() (Config, error) {
@@ -33,12 +35,17 @@ func Load() (Config, error) {
 		AppPort: getEnv("APP_PORT", "8080"),
 
 		DBHost:     getEnv("DB_HOST", "localhost"),
-		DBPort:     getEnv("DB_PORT", "5432"),
+		DBPort:     getEnv("DB_PORT", "5433"),
 		DBUser:     os.Getenv("DB_USER"),
 		DBPassword: os.Getenv("DB_PASSWORD"),
 		DBName:     os.Getenv("DB_NAME"),
 		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
 		DBTimezone: getEnv("DB_TIMEZONE", "Asia/Jakarta"),
+
+		MLServiceURL: getEnv(
+			"ML_SERVICE_URL",
+			"http://localhost:8000",
+		),
 	}
 
 	required := map[string]string{

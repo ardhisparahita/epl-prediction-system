@@ -1,14 +1,20 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"time"
 
 	"github.com/ardhisparahita/epl-prediction-system/backend/config"
 	"github.com/ardhisparahita/epl-prediction-system/backend/database"
+	"github.com/ardhisparahita/epl-prediction-system/backend/internal/client"
 	"github.com/ardhisparahita/epl-prediction-system/backend/internal/routes"
+	"github.com/ardhisparahita/epl-prediction-system/backend/internal/service"
 
 	"github.com/gofiber/fiber/v3"
 )
+
+const mlServiceTimeout = 15 * time.Second
 
 func main() {
 	if err := run(); err != nil {
@@ -17,11 +23,13 @@ func main() {
 }
 
 func run() error {
+	// Load application configuration.
 	cfg, err := config.Load()
 	if err != nil {
-		return err
+		return fmt.Errorf("load configuration: %w", err)
 	}
 
+	// Connect to PostgreSQL.
 	db, err := database.ConnectPostgres(cfg)
 	if err != nil {
 		return err
@@ -29,19 +37,47 @@ func run() error {
 
 	sqlDB, err := db.DB()
 	if err != nil {
-		return err
+		return fmt.Errorf("get database instance: %w", err)
 	}
 	defer sqlDB.Close()
 
+	// Initialize Python ML Service client.
+	mlClient, err := client.NewMLClient(
+		cfg.MLServiceURL,
+		mlServiceTimeout,
+	)
+	if err != nil {
+		return fmt.Errorf("initialize ML client: %w", err)
+	}
+
+	// Initialize prediction service.
+	predictionService, err := service.NewPredictionService(
+		mlClient,
+	)
+	if err != nil {
+		return fmt.Errorf("initialize prediction service: %w", err)
+	}
+
+	// Initialize Fiber application.
 	app := fiber.New(fiber.Config{
 		AppName: "EPL Prediction API",
 	})
 
-	routes.SetupRoutes(app, db)
+	// Register application routes.
+	routes.SetupRoutes(
+		app,
+		db,
+		predictionService,
+	)
 
 	log.Printf(
 		"EPL Prediction API starting on port %s",
 		cfg.AppPort,
+	)
+
+	log.Printf(
+		"ML Service configured at %s",
+		cfg.MLServiceURL,
 	)
 
 	return app.Listen(":" + cfg.AppPort)
