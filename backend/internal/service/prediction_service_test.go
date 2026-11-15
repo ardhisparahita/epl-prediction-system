@@ -25,6 +25,7 @@ func (m *mockPredictionClient) Predict(
 ) (dto.PredictionResponse, error) {
 	m.calls++
 	m.request = payload
+
 	return m.response, m.err
 }
 
@@ -259,6 +260,7 @@ func TestPredictBuildsHistoryAndCallsMLClient(t *testing.T) {
 		t.Fatalf("prediction failed: %v", err)
 	}
 
+	// Repository must be called once for each team.
 	if len(repository.calls) != 2 {
 		t.Fatalf(
 			"expected 2 repository calls, got %d",
@@ -276,6 +278,7 @@ func TestPredictBuildsHistoryAndCallsMLClient(t *testing.T) {
 		}
 	}
 
+	// ML client must be called exactly once.
 	if client.calls != 1 {
 		t.Fatalf(
 			"expected 1 ML client call, got %d",
