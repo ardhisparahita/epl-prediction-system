@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import {
   AlertCircle,
   BrainCircuit,
@@ -48,6 +48,23 @@ function getOutcomeLabel(outcome: Outcome) {
   return outcomes.find((item) => item.key === outcome)?.label ?? outcome;
 }
 
+// Open the browser's native date picker.
+function openDatePicker(input: HTMLInputElement | null) {
+  if (!input) return;
+
+  try {
+    if (typeof input.showPicker === "function") {
+      input.showPicker();
+      return;
+    }
+  } catch {
+    // Use the fallback if the native picker cannot be opened.
+  }
+
+  input.focus();
+  input.click();
+}
+
 function ModelCard({
   title,
   description,
@@ -74,6 +91,7 @@ function ModelCard({
         <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
           Predicted Result
         </p>
+
         <p className="mt-2 text-2xl font-bold text-emerald-400">
           {getOutcomeLabel(model.prediction)}
         </p>
@@ -91,6 +109,7 @@ function ModelCard({
             <div key={key}>
               <div className="mb-2 flex justify-between text-sm">
                 <span className="text-slate-400">{label}</span>
+
                 <span className="font-semibold tabular-nums">
                   {percentage.toFixed(2)}%
                 </span>
@@ -125,6 +144,9 @@ export default function PredictionsPage() {
   const [result, setResult] = useState<PredictionResponse | null>(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Ref for opening the native date picker.
+  const kickoffDateRef = useRef<HTMLInputElement>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -162,6 +184,7 @@ export default function PredictionsPage() {
 
   return (
     <div>
+      {/* Page Header */}
       <div className="mb-8">
         <p className="mb-2 text-sm font-medium tracking-wider text-emerald-400">
           MATCH ANALYSIS
@@ -175,6 +198,7 @@ export default function PredictionsPage() {
         </p>
       </div>
 
+      {/* Match Configuration */}
       <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
         <div className="mb-6 flex items-center gap-3">
           <div className="rounded-xl bg-emerald-500/10 p-3 text-emerald-400">
@@ -189,6 +213,7 @@ export default function PredictionsPage() {
 
         <form onSubmit={handleSubmit}>
           <div className="grid gap-5 md:grid-cols-2">
+            {/* Home Team */}
             <div>
               <label
                 htmlFor="home-team"
@@ -209,6 +234,7 @@ export default function PredictionsPage() {
                 className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-emerald-500"
               >
                 <option value="">Select home team</option>
+
                 {teams.map((team) => (
                   <option key={team.value} value={team.value}>
                     {team.label}
@@ -217,6 +243,7 @@ export default function PredictionsPage() {
               </select>
             </div>
 
+            {/* Away Team */}
             <div>
               <label
                 htmlFor="away-team"
@@ -237,6 +264,7 @@ export default function PredictionsPage() {
                 className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-emerald-500"
               >
                 <option value="">Select away team</option>
+
                 {teams.map((team) => (
                   <option
                     key={team.value}
@@ -249,6 +277,7 @@ export default function PredictionsPage() {
               </select>
             </div>
 
+            {/* Match Date */}
             <div className="md:col-span-2">
               <label
                 htmlFor="kickoff-date"
@@ -258,12 +287,8 @@ export default function PredictionsPage() {
               </label>
 
               <div className="relative">
-                <CalendarDays
-                  size={18}
-                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
-                />
-
                 <input
+                  ref={kickoffDateRef}
                   id="kickoff-date"
                   type="date"
                   required
@@ -273,23 +298,36 @@ export default function PredictionsPage() {
                     setResult(null);
                     setError("");
                   }}
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950 py-3 pl-11 pr-4 text-sm text-white outline-none transition focus:border-emerald-500"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 pr-12 text-sm text-white outline-none transition focus:border-emerald-500 [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:opacity-0"
                 />
+
+                <button
+                  type="button"
+                  aria-label="Open match date calendar"
+                  title="Choose match date"
+                  onClick={() => openDatePicker(kickoffDateRef.current)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-emerald-400 transition hover:bg-slate-800 hover:text-emerald-300"
+                >
+                  <CalendarDays size={19} />
+                </button>
               </div>
             </div>
           </div>
 
+          {/* Information */}
           <div className="mt-5 flex items-start gap-2 rounded-xl bg-slate-800/60 p-4 text-xs leading-5 text-slate-400">
             <ShieldCheck
               size={17}
               className="mt-0.5 shrink-0 text-emerald-400"
             />
+
             <p>
               Prediction uses historical matches before the selected match date.
               At least three previous matches are required for each team.
             </p>
           </div>
 
+          {/* Error Message */}
           {error && (
             <div
               role="alert"
@@ -300,6 +338,7 @@ export default function PredictionsPage() {
             </div>
           )}
 
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={isLoading}
@@ -320,6 +359,7 @@ export default function PredictionsPage() {
         </form>
       </section>
 
+      {/* Prediction Results */}
       {result && (
         <section className="mt-8">
           <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">

@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from "react-router";
 import MainLayout from "./layouts/MainLayout";
 import DashboardPage from "./pages/DashboardPage";
 import PredictionsPage from "./pages/PredictionsPage";
+import MatchHistoryPage from "./pages/MatchHistoryPage";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -23,10 +24,7 @@ function App() {
 
           <Route path="predictions" element={<PredictionsPage />} />
 
-          <Route
-            path="matches"
-            element={<PlaceholderPage title="Match History" />}
-          />
+          <Route path="matches" element={<MatchHistoryPage />} />
 
           <Route
             path="evaluation"
