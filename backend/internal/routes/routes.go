@@ -11,6 +11,7 @@ func SetupRoutes(
 	app *fiber.App,
 	db *gorm.DB,
 	predictionService *service.PredictionService,
+	matchService *service.MatchService,
 ) {
 	api := app.Group("/api/v1")
 
@@ -19,9 +20,10 @@ func SetupRoutes(
 	api.Get("/health/db", handler.DatabaseHealth(db))
 
 	// Prediction endpoint.
-	predictionHandler := handler.NewPredictionHandler(
-		predictionService,
-	)
-
+	predictionHandler := handler.NewPredictionHandler(predictionService)
 	api.Post("/predictions", predictionHandler.Predict)
+
+	// Match history endpoint.
+	matchHandler := handler.NewMatchHandler(matchService)
+	api.Get("/matches", matchHandler.List)
 }

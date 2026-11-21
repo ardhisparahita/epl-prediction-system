@@ -69,6 +69,11 @@ func run() error {
 		return fmt.Errorf("initialize prediction service: %w", err)
 	}
 
+	matchService, err := service.NewMatchService(matchRepository)
+	if err != nil {
+		return fmt.Errorf("initialize match service: %w", err)
+	}
+
 	// Initialize Fiber application.
 	app := fiber.New(fiber.Config{
 		AppName: "EPL Prediction API",
@@ -79,6 +84,7 @@ func run() error {
 		app,
 		db,
 		predictionService,
+		matchService,
 	)
 
 	log.Printf(

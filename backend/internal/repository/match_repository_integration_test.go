@@ -323,3 +323,140 @@ func TestFindRecentByTeamReturnsEmptyWhenNoHistory(t *testing.T) {
 		)
 	}
 }
+
+func TestFindMatchesFiltersAndPaginates(t *testing.T) {
+	repo, tx := setupMatchRepositoryIntegrationTest(t)
+
+	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
+	team := "FindMatchesTeam" + suffix
+
+	fixtures := []models.Match{
+		{
+			Date:     parseTestDate(t, "2026-01-10"),
+			HomeTeam: team,
+			AwayTeam: "OpponentA" + suffix,
+			FTHG:     2,
+			FTAG:     1,
+		},
+		{
+			Date:     parseTestDate(t, "2026-01-20"),
+			HomeTeam: "OpponentB" + suffix,
+			AwayTeam: team,
+			FTHG:     1,
+			FTAG:     2,
+		},
+		{
+			Date:     parseTestDate(t, "2026-02-01"),
+			HomeTeam: team,
+			AwayTeam: "OpponentC" + suffix,
+			FTHG:     3,
+			FTAG:     0,
+		},
+		{
+			Date:     parseTestDate(t, "2026-02-10"),
+			HomeTeam: "UnrelatedHome" + suffix,
+			AwayTeam: "UnrelatedAway" + suffix,
+			FTHG:     1,
+			FTAG:     1,
+		},
+		{
+			Date:     parseTestDate(t, "2026-03-01"),
+			HomeTeam: team,
+			AwayTeam: "OpponentD" + suffix,
+			FTHG:     2,
+			FTAG:     0,
+		},
+	}
+
+	if err := tx.Create(&fixtures).Error; err != nil {
+		t.Fatalf("failed to insert fixtures: %v", err)
+	}
+
+	from := parseTestDate(t, "2026-01-15")
+	to := parseTestDate(t, "2026-02-28")
+
+	matches, total, err := repo.FindMatches(
+		context.Background(),
+		MatchFilters{
+			Team: team,
+			From: &from,
+			To:   &to,
+		},
+		1,
+		1,
+	)
+
+	if err != nil {
+		t.Fatalf("failed to find matches: %v", err)
+	}
+
+	if total != 2 {
+		t.Fatalf("expected total 2, got %d", total)
+	}
+
+	if len(matches) != 1 {
+		t.Fatalf("expected 1 match on current page, got %d", len(matches))
+	}
+
+	if actual := matches[0].Date.Format(time.DateOnly); actual != "2026-01-20" {
+		t.Errorf("expected match date 2026-01-20, got %s", actual)
+	}
+
+	if matches[0].AwayTeam != team {
+		t.Errorf("expected away team %s, got %s", team, matches[0].AwayTeam)
+	}
+}
+
+func TestFindMatchesRejectsInvalidArguments(t *testing.T) {
+	repo, _ := setupMatchRepositoryIntegrationTest(t)
+
+	from := parseTestDate(t, "2026-03-01")
+	to := parseTestDate(t, "2026-01-01")
+
+	tests := []struct {
+		name    string
+		limit   int
+		offset  int
+		filters MatchFilters
+	}{
+		{
+			name:   "zero limit",
+			limit:  0,
+			offset: 0,
+		},
+		{
+			name:   "negative limit",
+			limit:  -1,
+			offset: 0,
+		},
+		{
+			name:   "negative offset",
+			limit:  10,
+			offset: -1,
+		},
+		{
+			name:   "invalid date range",
+			limit:  10,
+			offset: 0,
+			filters: MatchFilters{
+				From: &from,
+				To:   &to,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, _, err := repo.FindMatches(
+				context.Background(),
+				tt.filters,
+				tt.limit,
+				tt.offset,
+			)
+
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+		})
+	}
+}
